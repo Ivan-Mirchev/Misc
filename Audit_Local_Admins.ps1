@@ -16,13 +16,15 @@ $PingResult | Export-Csv -Path C:\TEMP\PingResult-$timeStamp.csv -NoTypeInformat
 
 $onlineComputers = $PingResult | Where-Object -Property TcpTestSucceeded -eq $true
 
-Invoke-Command -ComputerName $onlineComputers  -ScriptBlock {
+$LocalAdminsReport = Invoke-Command -ComputerName $onlineComputers.computername  -ScriptBlock {
     $admins = net localgroup administrators | Where-Object -FilterScript {$_ -AND $_ -notmatch "command completed successfully" -and $_ -notlike 'MINEDU\Domain Admins' -and $_ -notlike 'MINEDU\MOE_ADMINS_WORKSTATION' -and $_ -notlike 'Administrator' -and $_ -notlike 'monadmin'} | Select-Object -skip 4
     foreach ($member in $admins) {
         New-Object PSObject -Property @{
             Computername = $env:COMPUTERNAME
             OS = (Get-WmiObject -Class win32_operatingsystem).caption
-            LocalAdminsAdmins = $member
+            LocalAdmins = $member
         }
     }
-}  | Select ComputerName, OS, LocalAdmins | Export-CSV C:\TEMP\LocalAdminsReport-$timeStamp.csv -NoTypeInformation
+}  | Select ComputerName, OS, LocalAdmins 
+
+$LocalAdminsReport | Export-CSV C:\TEMP\LocalAdminsReport-$timeStamp.csv -NoTypeInformation
